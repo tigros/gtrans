@@ -123,14 +123,16 @@ namespace gtrans
                         Thread.Sleep(50);
                     }
 
+                    sb.Append(" " + inner);
                     count++;
                     if (count % 10 == 0)
                     {
-                        textBox2.AppendText(" " + sb.ToString());
+                        textBox2.Text += " " + sb.ToString();
+                        textBox2.SelectionStart = textBox2.Text.Length;
+                        textBox2.ScrollToCaret();
+                        textBox2.Refresh();
                         sb.Clear();
                     }
-                    else
-                        sb.Append(" " + inner);
                 }
 
                 textBox2.AppendText(" " + sb.ToString());
