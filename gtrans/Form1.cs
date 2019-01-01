@@ -88,6 +88,7 @@ namespace gtrans
                 ArrayList al = getlist();
                 webBrowser1.DocumentCompleted -= new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
                 webBrowser1.DocumentCompleted += new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
+                webBrowser1.ScriptErrorsSuppressed = true;
 
                 foreach (string x in al)
                 {
