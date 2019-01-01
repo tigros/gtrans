@@ -127,10 +127,7 @@ namespace gtrans
                     count++;
                     if (count % 10 == 0)
                     {
-                        textBox2.Text += " " + sb.ToString();
-                        textBox2.SelectionStart = textBox2.Text.Length;
-                        textBox2.ScrollToCaret();
-                        textBox2.Refresh();
+                        textBox2.AppendText(" " + sb.ToString());
                         sb.Clear();
                     }
                 }
