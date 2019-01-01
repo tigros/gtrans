@@ -10,7 +10,8 @@ namespace gtrans
 {
     public partial class Form1 : Form
     {
-        bool gotcha = false;        
+        bool gotcha = false;
+        bool stoprunning = false;
 
         public Form1()
         {
@@ -32,13 +33,9 @@ namespace gtrans
             for (int i = 0; i <= loops; i++)
             {
                 if (i < loops)
-                {
                     sb.Append(Uri.EscapeDataString(value.Substring(limit * i, limit)));
-                }
                 else
-                {
                     sb.Append(Uri.EscapeDataString(value.Substring(limit * i)));
-                }
             }
 
             return sb.ToString();
@@ -77,6 +74,16 @@ namespace gtrans
 
         private void button1_Click(object sender, EventArgs e)
         {
+            if (button1.Text == "Stop")
+            {
+                stoprunning = true;
+                button1.Text = "Go";
+                return;
+            }
+
+            stoprunning = false;
+            button1.Text = "Stop";
+
             textBox2.Text = "";
             string inner = "";
             StringBuilder sb = new StringBuilder();
@@ -92,6 +99,9 @@ namespace gtrans
 
                 foreach (string x in al)
                 {
+                    if (stoprunning)
+                        break;
+
                     Uri u = new Uri(s + x);
                     webBrowser1.Url = u;
 
@@ -118,11 +128,12 @@ namespace gtrans
                         }
                     };
 
-                    while (t1.Enabled)
+                    while (t1.Enabled && !stoprunning)
                     {
                         Application.DoEvents();
                         Thread.Sleep(50);
                     }
+                    t1.Stop();
 
                     sb.Append(" " + inner);
                     count++;
@@ -132,8 +143,9 @@ namespace gtrans
                         sb.Clear();
                     }
                 }
-
+                
                 textBox2.AppendText(" " + sb.ToString());
+                button1.Text = "Go";
             }
             catch (Exception ex)
             {
@@ -184,6 +196,11 @@ namespace gtrans
             {
                 MessageBox.Show(ex.ToString());
             }
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            stoprunning = true;
         }
     }
 }

@@ -117,6 +117,7 @@
             this.Controls.Add(this.textBox1);
             this.Name = "Form1";
             this.Text = "gtrans";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 
