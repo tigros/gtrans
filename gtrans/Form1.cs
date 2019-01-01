@@ -60,10 +60,9 @@ namespace gtrans
                 {
                     s = enc.Substring(pos, limit);
                     int p = s.LastIndexOf("%20");
-                    pos += p;
                     s = s.Substring(0, p);
-                    pos += 3;
                     a.Add(s);
+                    pos += p + 3;
                 }
                 else
                 {
@@ -83,56 +82,63 @@ namespace gtrans
             StringBuilder sb = new StringBuilder();
             int count = 0;
 
-            string s = @"https://translate.google.com/#view=home&op=translate&sl=auto&tl=en&text=";
-            ArrayList al = getlist();
-            webBrowser1.DocumentCompleted -= new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
-            webBrowser1.DocumentCompleted += new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
-
-            foreach (string x in al)
+            try
             {
-                Uri u = new Uri(s + x);
-                webBrowser1.Url = u;
+                string s = @"https://translate.google.com/#view=home&op=translate&sl=auto&tl=en&text=";
+                ArrayList al = getlist();
+                webBrowser1.DocumentCompleted -= new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
+                webBrowser1.DocumentCompleted += new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
 
-                gotcha = false;
-                while (!gotcha)
+                foreach (string x in al)
                 {
-                    Application.DoEvents();
-                    Thread.Sleep(50);
-                }
+                    Uri u = new Uri(s + x);
+                    webBrowser1.Url = u;
 
-                inner = "";
-                var t1 = new System.Windows.Forms.Timer { Enabled = true, Interval = 1000 };
-                t1.Tick += (o, a) => 
-                {
-                    HtmlElementCollection hc = webBrowser1.Document.GetElementsByTagName("span");
-                    foreach (HtmlElement element in hc)
+                    gotcha = false;
+                    while (!gotcha)
                     {
-                        if (element.GetAttribute("className") == "tlid-translation translation")
-                        {
-                            inner = element.InnerText.Trim();
-                            if (inner != "")
-                                t1.Stop();
-                        }
+                        Application.DoEvents();
+                        Thread.Sleep(50);
                     }
-                };
 
-                while (t1.Enabled)
-                {
-                    Application.DoEvents();
-                    Thread.Sleep(50);
+                    inner = "";
+                    var t1 = new System.Windows.Forms.Timer { Enabled = true, Interval = 1000 };
+                    t1.Tick += (o, a) =>
+                    {
+                        HtmlElementCollection hc = webBrowser1.Document.GetElementsByTagName("span");
+                        foreach (HtmlElement element in hc)
+                        {
+                            if (element.GetAttribute("className") == "tlid-translation translation")
+                            {
+                                inner = element.InnerText.Trim();
+                                if (inner != "")
+                                    t1.Stop();
+                            }
+                        }
+                    };
+
+                    while (t1.Enabled)
+                    {
+                        Application.DoEvents();
+                        Thread.Sleep(50);
+                    }
+
+                    count++;
+                    if (count % 10 == 0)
+                    {
+                        textBox2.AppendText(" " + sb.ToString());
+                        sb.Clear();
+                    }
+                    else
+                        sb.Append(" " + inner);
                 }
 
-                count++;
-                if (count % 10 == 0)
-                {
-                    textBox2.AppendText(" " + sb.ToString());
-                    sb.Clear();
-                }
-                else
-                    sb.Append(" " + inner);
+                textBox2.AppendText(" " + sb.ToString());
             }
-
-            textBox2.AppendText(" " + sb.ToString());
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -161,15 +167,22 @@ namespace gtrans
 
         private void button3_Click(object sender, EventArgs e)
         {
-            SaveFileDialog saveFileDialog1 = new SaveFileDialog();
-
-            saveFileDialog1.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
-            saveFileDialog1.FilterIndex = 1;
-            saveFileDialog1.RestoreDirectory = true;
-
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            try
             {
-                File.WriteAllText(saveFileDialog1.FileName, textBox2.Text);
+                SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+
+                saveFileDialog1.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
+                saveFileDialog1.FilterIndex = 1;
+                saveFileDialog1.RestoreDirectory = true;
+
+                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+                {
+                    File.WriteAllText(saveFileDialog1.FileName, textBox2.Text);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
             }
         }
     }
