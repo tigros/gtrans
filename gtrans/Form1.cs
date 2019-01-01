@@ -141,7 +141,7 @@ namespace gtrans
                     }
 
                     inner = "";
-                    var t1 = new System.Windows.Forms.Timer { Enabled = true, Interval = 1000 };
+                    var t1 = new System.Windows.Forms.Timer { Enabled = true, Interval = 1500 };
                     t1.Tick += (o, a) =>
                     {
                         HtmlElementCollection hc = webBrowser1.Document.GetElementsByTagName("span");
