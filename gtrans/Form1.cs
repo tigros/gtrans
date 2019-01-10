@@ -1,8 +1,11 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -11,8 +14,10 @@ namespace gtrans
 {
     public partial class Form1 : Form
     {
+        private delegate bool EnumWindowProc(IntPtr hWnd, IntPtr lParam);
         bool gotcha = false;
         bool stoprunning = false;
+        IntPtr browserhwnd = IntPtr.Zero;
 
         public Form1()
         {
@@ -44,20 +49,20 @@ namespace gtrans
 
         private ArrayList getlist()
         {
-            string enc = myenc();
+            string enc = textBox1.Text;
             ArrayList a = new ArrayList();
             int pos = 0;
 
             string s = "";
             int len = enc.Length;
-            int limit = 1900;
+            int limit = 2000;
 
             while (true)
             {
                 if (pos + limit < len)
                 {
                     s = enc.Substring(pos, limit);
-                    int p = s.LastIndexOf("%20");
+                    int p = s.LastIndexOf(" ");
                     s = s.Substring(0, p);
                     a.Add(s);
                     pos += p + 3;
@@ -98,6 +103,52 @@ namespace gtrans
             textBox1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
+            browserhwnd = IntPtr.Zero;
+        }
+
+        private bool EnumWindow(IntPtr hWnd, IntPtr lParam)
+        {
+            GCHandle gcChildhandlesList = GCHandle.FromIntPtr(lParam);
+
+            if (gcChildhandlesList == null || gcChildhandlesList.Target == null)
+            {
+                return false;
+            }
+
+            List<IntPtr> childHandles = gcChildhandlesList.Target as List<IntPtr>;
+            childHandles.Add(hWnd);
+
+            StringBuilder sb = new StringBuilder(100);
+            IntPtr result = GetClassName(hWnd, sb, sb.Capacity);
+            if (result != IntPtr.Zero && sb.ToString() == "Internet Explorer_Server")
+                browserhwnd = hWnd;
+
+            return true;
+        }
+
+        public void getbrowserhwnd(IntPtr parent)
+        {
+            List<IntPtr> childHandles = new List<IntPtr>();
+
+            GCHandle gcChildhandlesList = GCHandle.Alloc(childHandles);
+            IntPtr pointerChildHandlesList = GCHandle.ToIntPtr(gcChildhandlesList);
+
+            try
+            {
+                EnumWindowProc childProc = new EnumWindowProc(EnumWindow);
+                EnumChildWindows(parent, childProc, pointerChildHandlesList);
+            }
+            finally
+            {
+                gcChildhandlesList.Free();
+            }
+        }
+
+        private void sendctrlv()
+        {
+            uint WM_COMMAND = 0x0111;
+            int pastecmd = 0x01001A;
+            PostMessage(browserhwnd, WM_COMMAND, pastecmd, 0);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -120,6 +171,7 @@ namespace gtrans
             try
             {
                 string s = @"https://translate.google.com/#view=home&op=translate&sl=auto&tl=en&text=";
+                Uri u = new Uri(s);
                 ArrayList al = getlist();
                 webBrowser1.DocumentCompleted -= new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
                 webBrowser1.DocumentCompleted += new WebBrowserDocumentCompletedEventHandler(webBrowser1_DocumentCompleted);
@@ -130,7 +182,6 @@ namespace gtrans
                     if (stoprunning)
                         break;
 
-                    Uri u = new Uri(s + x);
                     webBrowser1.Url = u;
 
                     gotcha = false;
@@ -139,6 +190,15 @@ namespace gtrans
                         Application.DoEvents();
                         Thread.Sleep(50);
                     }
+
+                    if (browserhwnd == IntPtr.Zero)
+                        getbrowserhwnd(Process.GetCurrentProcess().MainWindowHandle);
+
+                    if (x == "")
+                        continue;
+                    Clipboard.SetText(x);
+                    webBrowser1.Focus();
+                    sendctrlv();
 
                     inner = "";
                     var t1 = new System.Windows.Forms.Timer { Enabled = true, Interval = 2000 };
@@ -173,15 +233,15 @@ namespace gtrans
                             newbrow();
                         GC.Collect();
                     }
-                }
-                
+                }                
                 textBox2.AppendText(" " + sb.ToString());
-                button1.Text = "Go";
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString());
             }
+
+            button1.Text = "Go";
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -233,5 +293,16 @@ namespace gtrans
         {
             stoprunning = true;
         }
+
+        [DllImport("user32.dll")]
+        static extern bool PostMessage(IntPtr hWnd, uint Msg, int wParam, int lParam);
+       
+        [DllImport("user32")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EnumChildWindows(IntPtr window, EnumWindowProc callback, IntPtr lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
     }
 }
