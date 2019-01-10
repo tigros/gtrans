@@ -65,7 +65,7 @@ namespace gtrans
                     int p = s.LastIndexOf(" ");
                     s = s.Substring(0, p);
                     a.Add(s);
-                    pos += p + 3;
+                    pos += p + 1;
                 }
                 else
                 {
